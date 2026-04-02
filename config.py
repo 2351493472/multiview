@@ -46,24 +46,25 @@ effnet_config = {
     # --- 骨干输出通道 ---
     "raw_n_feat":     256,         # ResNet18 layer3 输出通道数
     "raw_n_feat_phi": 256,         # 同上
-
+    # 采用layer4作为辅助，大小为512，采用layer2，大小为128
+    "raw_n_feat_l2":  512,
     # --- Coarse Flow (16×16 特征图) ---
     "n_feat":                   256,     # 1×1Conv 投影后的通道数（flow 输入）
     "map_len":                  16,      # 特征图空间尺寸
-    "n_coupling_blocks":        8,       # 仿射耦合层数
-    "channels_hidden_teacher":  256,     # 耦合层隐藏通道数
-    "kernel_sizes":             [3, 3, 3, 3, 5, 5, 5, 7],
+    "n_coupling_blocks":        10,       # 仿射耦合层数
+    "channels_hidden_teacher":  512,     # 耦合层隐藏通道数
+    "kernel_sizes":             [3, 3, 3, 3, 5, 5, 5, 7, 7, 7],
     "clamp":                    1.2,
 
     # --- ICA Encoder ---
-    "ica_hidden_dim": 256,    # Φ(·) 输出维度 / h_i 维度
-    "ica_n_iter":       3,    # ICA 迭代轮数 T
+    "ica_hidden_dim": 512,    # Φ(·) 输出维度 / h_i 维度
+    "ica_n_iter":       5,    # ICA 迭代轮数 T
     # τ 初始值（可学习参数），训练中自适应调整
     # 范围 clamp 至 [0.01, 2.0]
     "ica_tau":         0.5,
 
     # --- θ 输出维度（ρ(·) 输出 / 条件 Flow 维度）---
-    "phi_out_dim": 256,
+    "phi_out_dim": 512,
 
     # --- 通用 ---
     "use_gamma": True,
@@ -86,7 +87,7 @@ effnet_config.update({
     # --- 推理评分 ---
     # lambda_consensus：S_consensus 权重（作用于归一化后的 [0,1] 分数）
     # loo_flow_weight ：LOO Flow NLL 与标准 NLL 的融合权重
-    "lambda_consensus": 1.0,
+    "lambda_consensus": 0.0,
     "loo_flow_weight":  0.5,
 
     # --- 其他 ---

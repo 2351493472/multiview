@@ -141,12 +141,13 @@ def get_cs_flow_model(config):
             inp.append(nodes[0].out0)
         inp.append(cond_node.out0)
 
+        k_size = config["kernel_sizes"][k] if k < len(config["kernel_sizes"]) else 3
         nodes.append(Node(
             inp, parallel_glow_coupling_layer,
             {'clamp': config["clamp"], 'F_class': GlobalCondCrossConvolutions,
              'use_noise': config["use_noise"], 'global_cond_dim': cond_dim,
              'F_args': {'channels_hidden': config["channels_hidden_teacher"],
-                        'kernel_size': config["kernel_sizes"][k], 'block_no': k}},
+                        'kernel_size': k_size, 'block_no': k}},
             name=f'fc1_{k}',
         ))
 

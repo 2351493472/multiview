@@ -234,8 +234,8 @@ def train(train_loader, test_loader, config):
                 per_view_max  = rim.amax(dim=(2, 3))              # [B, V]
                 score_max     = per_view_max.topk(2, dim=1).values.mean(1)
 
-                flat          = rim.view(B, V, -1)
-                k_top         = max(1, flat.shape[-1] // 10)
+                flat = rim.view(B, V, -1)
+                k_top = max(1, flat.shape[-1] // 10)
                 per_view_topk = flat.topk(k_top, dim=-1).values.mean(-1)  # [B, V]
                 score_topk    = per_view_topk.topk(2, dim=1).values.mean(1)
 
@@ -272,7 +272,7 @@ def train(train_loader, test_loader, config):
                 # Gaussian blur（σ=2，比原来的 σ=4 更保留小缺陷细节）
                 psc = fused_pix.cpu().numpy().copy()
                 for b in range(psc.shape[0]):
-                    psc[b] = cv2.GaussianBlur(psc[b], (0, 0), sigmaX=2)
+                    psc[b] = cv2.GaussianBlur(psc[b], (0, 0), sigmaX=1)
                 pixel_scores_l.append(psc)
                 pixel_gt_l.append(
                     (masks.view(B * V, H, W).cpu().numpy() > 0).astype(np.uint8)
@@ -281,7 +281,7 @@ def train(train_loader, test_loader, config):
                 # Tracker
                 amap = fused_pix.cpu().numpy().copy()
                 for k in range(amap.shape[0]):
-                    amap[k] = cv2.GaussianBlur(amap[k], (0, 0), sigmaX=2)
+                    amap[k] = cv2.GaussianBlur(amap[k], (0, 0), sigmaX=1)
                 mfnp = masks.view(B * V, H, W).cpu().numpy()
                 for k in range(B * V):
                     if mfnp[k].sum() == 0:

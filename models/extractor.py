@@ -18,6 +18,7 @@ import torch.nn as nn
 class FeatureExtractor(nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.config = config
 
         self.register_buffer('input_mean',
             torch.tensor(config.get('pixel_mean', [0.48145466, 0.4578275, 0.40821073])).view(1, 3, 1, 1))
@@ -38,13 +39,14 @@ class FeatureExtractor(nn.Module):
         self.layer1 = net.layer1   # 64ch,  64×64
         self.layer2 = net.layer2   # 128ch, 32×32  ← 纹理级特征
         self.layer3 = net.layer3   # 256ch, 16×16  ← 语义级特征
+        self.layer4 = net.layer4   # 512ch, 8×8
 
-        for mod in [self.stem, self.layer1, self.layer2, self.layer3]:
+        for mod in [self.stem, self.layer1, self.layer2, self.layer3, self.layer4]:
             mod.eval()
             for param in mod.parameters():
                 param.requires_grad = False
 
-        print("[*] ResNet18: layer2→[B,128,32,32], layer3→[B,256,16,16]")
+        print(f"[*] ResNet18: FeatureExtractor initialized (flow target layer: {self.config.get('extract_layer_flow', 3)})")
 
     def _to_imagenet_norm(self, x):
         scale = self.input_std / self.imagenet_std
@@ -56,19 +58,30 @@ class FeatureExtractor(nn.Module):
         """
         Returns:
             dict with:
-              'flow' / 'phi': [B, 256, 16, 16]  (layer3)
+              'flow' / 'phi': Dynamically selected based on config
               'layer2':       [B, 128, 32, 32]   (layer2)
         """
         x_in = self._to_imagenet_norm(x)
         feat = self.stem(x_in)
-        feat = self.layer1(feat)
-        feat_l2 = self.layer2(feat)       # [B, 128, 32, 32]
+        feat_l1 = self.layer1(feat)
+        feat_l2 = self.layer2(feat_l1)    # [B, 128, 32, 32]
         feat_l3 = self.layer3(feat_l2)    # [B, 256, 16, 16]
+        feat_l4 = self.layer4(feat_l3)    # [B, 512, 8, 8]
 
-        return {'flow': feat_l3, 'phi': feat_l3, 'layer2': feat_l2}
+        features = {
+            1: feat_l1,
+            2: feat_l2,
+            3: feat_l3,
+            4: feat_l4
+        }
+
+        target_layer = self.config.get("extract_layer_flow", 3)
+        feat_flow = features[target_layer]
+
+        return {'flow': feat_flow, 'phi': feat_flow, 'layer2': feat_l4}
 
     def train(self, mode=True):
         super().train(mode)
-        for mod in [self.stem, self.layer1, self.layer2, self.layer3]:
+        for mod in [self.stem, self.layer1, self.layer2, self.layer3, self.layer4]:
             mod.eval()
         return self
